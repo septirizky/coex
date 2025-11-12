@@ -1,16 +1,20 @@
 'use client'
 import Script from 'next/script'
 import { useCallback, useEffect, useState } from 'react'
+
 declare global {
   interface Window {
     fbAsyncInit?: () => void
     FB: any
   }
 }
+
 const APP_ID = process.env.NEXT_PUBLIC_FB_APP_ID
 const CONFIG_ID = process.env.NEXT_PUBLIC_FB_LOGIN_CONFIG_ID
+
 export default function EmbeddedSignupButton() {
   const [sdkReady, setSdkReady] = useState(false)
+
   useEffect(() => {
     window.fbAsyncInit = function () {
       if (!APP_ID) {
@@ -21,20 +25,24 @@ export default function EmbeddedSignupButton() {
         appId: APP_ID,
         autoLogAppEvents: true,
         xfbml: false,
-        version: 'v24.0',
+        version: 'v24.0', // Graph API version yang kamu pakai
       })
       setSdkReady(true)
     }
   }, [])
+
   const launchEmbeddedSignup = useCallback(() => {
-    if (!window.FB) {
-      console.warn('FB SDK not ready')
-      return
-    }
+    if (!window.FB) return
+
     const extras: any = {
       feature: 'whatsapp_embedded_signup',
+      // ini yang memaksa flow jadi WhatsApp Business App Onboarding
+      featureType: 'whatsapp_business_app_onboarding',
+      version: 'v3',
+      sessionInfoVersion: '3',
       ...(CONFIG_ID ? { config_id: CONFIG_ID } : {}),
     }
+
     window.FB.login(
       function (response: any) {
         if (response?.authResponse) {
@@ -56,6 +64,7 @@ export default function EmbeddedSignupButton() {
       }
     )
   }, [])
+
   return (
     <>
       <Script
@@ -64,26 +73,11 @@ export default function EmbeddedSignupButton() {
         defer
         crossOrigin="anonymous"
       />
-      <button
-        onClick={launchEmbeddedSignup}
-        disabled={!sdkReady}
-        style={{
-          padding: '12px 16px',
-          borderRadius: 12,
-          border: '1px solid #e5e7eb',
-          background: sdkReady ? '#111827' : '#9ca3af',
-          color: 'white',
-          fontWeight: 600,
-          cursor: sdkReady ? 'pointer' : 'not-allowed',
-        }}
-      >
+      <button onClick={launchEmbeddedSignup} disabled={!sdkReady}>
         {sdkReady
           ? 'Connect with WhatsApp Business'
           : 'Loading Facebook SDK...'}
       </button>
-      <p style={{ marginTop: 12, color: '#4b5563' }}>
-        Ensure HTTPS and add your domain to Allowed Domains in Meta App.
-      </p>
     </>
   )
 }
